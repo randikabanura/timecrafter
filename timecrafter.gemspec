@@ -28,4 +28,6 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_development_dependency "rspec", '~> 3.9'
+  
+  spec.add_dependency 'strptime', '~> 0.2.3'
 end

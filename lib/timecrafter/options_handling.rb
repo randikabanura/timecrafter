@@ -13,6 +13,8 @@ module Timecrafter
           error_handling_boolean(k, v)
         when :theme
           error_handling_theme(v)
+        when :strftime
+
         else
           not_available_argument(k, v)
         end

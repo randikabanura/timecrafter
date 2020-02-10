@@ -1,60 +1,53 @@
 require 'timecrafter/version'
+require 'strptime'
 
 module Timecrafter
   autoload :OptionHandling, 'timecrafter/options_handling'
 
   class Error < StandardError; end
 
-  def self.humanize_hourly(hours, _options = {})
-    error_handling("Hour", hours)
+  def self.humanize_hours(hours, _options = {})
+    error_handling('Hour', hours)
 
     Timecrafter::OptionHandling.handle(_options)
-
-    hours = hours.to_f
-    hour = hours.to_i
 
     param_precision = _options[:precision] || 2
     param_seconds = _options[:seconds] || false
     param_theme = _options[:theme] || 'long'
+    param_strftime = _options[:strftime] || '%H hours %M minutes'
 
-    minutes_fraction = hours.modulo(1).round(param_precision)
+    hours = hours.to_f
+    hour = hour.to_i
+    seconds = (hours * 60 * 60).round
+    
+    param_strftime += '%s' if param_seconds
+    strftime = param_strftime
 
-    theme = param_theme
-    seconds = nil
-    minutes = if !param_seconds
-                get_fraction(60, minutes_fraction)
-              else
-                get_fraction(60, minutes_fraction, param_precision)
-              end
-
-    if param_seconds
-      seconds_fraction = minutes.modulo(1).round(param_precision)
-      seconds = get_fraction(60, seconds_fraction)
-      minutes = minutes.floor
-    end
-
-    create_default_hourly(hour, minutes, seconds, theme)
+    create_default_hourly(seconds, hour, strftime)
   end
 
+  def self.humanize_hours_to_seconds(hours, options = {})
+    error_handling('Hour', hours)
+
+    hours = hours.to_f
+    seconds = (hours * 60 * 60).round
+
+    "#{seconds} second#{'s' if more_than_one?(seconds)}"
+  end
+
+  def self.humanize_hours_to_minutes(hours, options = {})
+    error_handling('Hour', hours)
+
+    hours = hours.to_f
+    minutes = (hours * 60).round
+
+    "#{minutes} minute#{'s' if more_than_one?(minutes)}"
+  end
 
   private
 
-  def self.create_default_hourly(hour, minutes, seconds = nil, theme = 'long')
-    hourly_humanize = ''
-
-    if more_than_zero?(hour)
-      hourly_humanize += "#{hour} hour#{'s' if validate_theme_number(hour, theme)}"
-    end
-
-    if more_than_zero?(minutes) || seconds&.positive?
-      hourly_humanize += " #{minutes} minute#{'s' if validate_theme_number(minutes, theme)}"
-    end
-
-    if seconds&.positive?
-      hourly_humanize += " #{seconds} second#{'s' if validate_theme_number(seconds, theme)}"
-    end
-
-    hourly_humanize.strip
+  def self.create_default_hourly(seconds, hour, strftime)
+    Time.at(seconds).utc.strftime(strftime)
   end
 
   def self.more_than_zero?(number)
@@ -68,7 +61,7 @@ module Timecrafter
   def self.get_fraction(multiplier, fraction, precision = 0)
     (multiplier * fraction).round(precision)
   end
-  
+
   def self.validate_theme_number(number, theme)
     more_than_one?(number) && theme == 'long'
   end
